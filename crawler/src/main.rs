@@ -21,11 +21,11 @@ async fn main() -> Result<(), fantoccini::error::CmdError> {
   let client = client::make().await.expect("error on client build");
 
   match args.script.as_str() {
-    "temperature" => {
+    "climate-data" => {
       climate_data::handler(&client).await.unwrap();
     }
     "inmet-stations" => inmet_stations::handler(&client).await.unwrap(),
-    _ => panic!(),
+    _ => panic!("script not found"),
   }
 
   client.close().await

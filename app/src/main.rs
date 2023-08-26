@@ -1,4 +1,5 @@
 pub mod handlers;
+pub mod jobs;
 pub mod middleware;
 pub mod models;
 pub mod utils;
@@ -24,8 +25,6 @@ async fn main() -> Result<(), std::io::Error> {
   tracing_subscriber::fmt::init();
 
   let db: DataBase = DataBase::new().await;
-
-  sqlx::migrate!("../migrations").run(&db.pool).await.unwrap();
 
   let app = Route::new()
     .nest("/", handlers::all())

@@ -3,7 +3,6 @@ CREATE TABLE stations
     id          bigserial    NOT NULL
         CONSTRAINT stations_pk
             PRIMARY KEY,
-    uid         uuid         NOT NULL UNIQUE,
     city        varchar(255) NOT NULL,
     uf          varchar(2)   NOT NULL,
     location    point        NOT NULL,
@@ -15,6 +14,3 @@ CREATE TABLE stations
 
 CREATE INDEX stations_inmet_code_idx
     ON stations (inmet_code);
-
-CREATE INDEX stations_uid_idx
-    ON stations (uid);

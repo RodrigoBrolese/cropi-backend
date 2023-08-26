@@ -1,6 +1,10 @@
 use poem::{http::StatusCode, Error, IntoResponse};
 
-pub(crate) async fn catch_all_errors(err: Error) -> impl IntoResponse {
+pub(crate) async fn catch_all_errors(mut err: Error) -> impl IntoResponse {
+  if err.is::<poem::error::ParseJsonError>() {
+    err.set_error_message("Content-Type must be JSON");
+  }
+
   super::response::json(
     serde_json::json!({
         "error": err.to_string()

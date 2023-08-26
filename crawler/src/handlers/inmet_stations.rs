@@ -2,7 +2,6 @@ use fantoccini::{error::CmdError, Locator};
 use scraper::{Html, Selector};
 use sqlx::PgPool;
 use std::time::Duration;
-use uuid::Uuid;
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
@@ -132,9 +131,8 @@ pub(crate) async fn handler(client: &fantoccini::Client) -> Result<(), CmdError>
     }
 
     sqlx::query!(
-      "INSERT INTO stations (uid, city, uf, location, status, inmet_code)
-                VALUES ($1, $2, $3, ST_PointFromText($4)::point, $5, $6);",
-      Uuid::new_v4(),
+      "INSERT INTO stations (city, uf, location, status, inmet_code)
+                VALUES ($1, $2, ST_PointFromText($3)::point, $4, $5);",
       station.city,
       station.uf,
       point,

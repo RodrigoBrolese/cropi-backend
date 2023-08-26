@@ -1,6 +1,6 @@
 use crate::{
   models::user::User,
-  utils::{database::DataBase, jwt::encode, response},
+  utils::{database::DataBase, jwt, response},
 };
 use garde::Validate;
 use poem::{
@@ -47,9 +47,9 @@ async fn login(req: Json<Login>, pool: Data<&DataBase>) -> Response {
   }
 
   response::json_ok(serde_json::json!({
-    "user_id": user.uid,
+    "user_id": user.id,
     "name": user.name,
-    "token": encode(user.uid.to_string())
+    "token": jwt::encode(user.id.to_string())
   }))
 }
 
