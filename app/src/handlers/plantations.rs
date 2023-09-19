@@ -3,6 +3,7 @@ use crate::{
   middleware::ensure_json,
   models::{
     culture::Culture,
+    pathogenic::Pathogenic,
     plantation::Plantation,
     plantation_pathogenic_occurrences::PlantationPathogenicOccurrences,
     stations::Station,
@@ -29,18 +30,23 @@ use serde::{Deserialize, Serialize};
 use std::{fs::File, io::prelude::*, sync::Arc};
 use uuid::Uuid;
 
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize, Validate, Debug)]
 struct PlantationCreate {
   #[garde(required, ascii, length(min = 3, max = 25))]
   alias: Option<String>,
   #[garde(required)]
-  culture_id: Option<String>,
+  culture_id: Option<i64>,
   #[garde(required)]
-  latitude: Option<String>,
+  latitude: Option<f64>,
   #[garde(required)]
-  longitude: Option<String>,
+  longitude: Option<f64>,
   #[garde(required)]
-  area: Option<String>,
+  area: Option<f64>,
+  #[garde(
+    required,
+    pattern(r"([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))")
+  )]
+  planting_date: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -51,17 +57,47 @@ struct PlantationResponse {
   latitude: Option<f64>,
   longitude: Option<f64>,
   area: f64,
+  planting_date: chrono::NaiveDateTime,
   create_date: chrono::NaiveDateTime,
   update_date: Option<chrono::NaiveDateTime>,
   culture: Culture,
   station: Option<Station>,
-  ocurrences: Option<Vec<PlantationPathogenicOccurrences>>,
+  plantation_ocurrences: Option<Vec<PlantationPathogenicOccurrencesResponse>>,
+  region_ocurrences: Option<Vec<PlantationPathogenicOccurrencesResponse>>,
+}
+
+#[derive(Serialize)]
+
+struct PlantationPathogenicOccurrencesResponse {
+  id: String,
+  pathogenic: Pathogenic,
+  image: Option<String>,
+  occurrence_date: chrono::NaiveDateTime,
+  temperature: Option<f64>,
+  humidity: Option<f64>,
+  create_date: chrono::NaiveDateTime,
+  update_date: Option<chrono::NaiveDateTime>,
+}
+
+#[derive(Serialize)]
+struct PlantationAllResponse {
+  id: String,
+  alias: Option<String>,
+  latitude: Option<f64>,
+  longitude: Option<f64>,
+  area: f64,
+  planting_date: chrono::NaiveDateTime,
+  create_date: chrono::NaiveDateTime,
+  update_date: Option<chrono::NaiveDateTime>,
+  culture: Culture,
+  station: Option<Station>,
+  has_ocurrences: bool,
 }
 
 #[derive(Deserialize, Validate)]
 struct PlantationPathogenicOccurrencesCreate {
   #[garde(required)]
-  pathogenic_id: Option<String>,
+  pathogenic_id: Option<i64>,
   #[garde(
     required,
     pattern(r"([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))")
@@ -71,7 +107,35 @@ struct PlantationPathogenicOccurrencesCreate {
 
 #[handler]
 async fn all(db: Data<&database::DataBase>, user: Data<&User>) -> Response {
-  let response = Plantation::all_by_user_id(&db, user.id).await;
+  let plantations = Plantation::all_by_user_id(&db, user.id).await;
+
+  let mut response: Vec<PlantationAllResponse> = Vec::new();
+  for plantation in plantations {
+    let culture = Culture::find_by_id(&db, plantation.culture_id)
+      .await
+      .unwrap();
+
+    let mut stations: Option<Station> = None;
+    if plantation.station_id.is_some() {
+      stations = Some(Station::find_by_id(&db, plantation.station_id.unwrap()).await);
+    }
+
+    response.push(PlantationAllResponse {
+      id: plantation.id.to_string(),
+      alias: plantation.alias,
+      latitude: plantation.latitude,
+      longitude: plantation.longitude,
+      area: plantation.area,
+      planting_date: plantation.planting_date,
+      create_date: plantation.create_date,
+      update_date: plantation.update_date,
+      culture,
+      station: stations,
+      has_ocurrences: Plantation::has_ocurrence_last_24h(&db, plantation.id)
+        .await
+        .unwrap_or(false),
+    });
+  }
 
   response::json_ok(serde_json::json!({ "plantations": response }))
 }
@@ -86,11 +150,7 @@ async fn create(
     return response::json(response::garde_error_to_json(e), StatusCode::BAD_REQUEST);
   }
 
-  let culture = Culture::find_by_id(
-    &db,
-    req.0.culture_id.as_ref().unwrap().parse::<i64>().unwrap(),
-  )
-  .await;
+  let culture = Culture::find_by_id(&db, req.0.culture_id.unwrap()).await;
 
   if culture.is_err() {
     return response::json(
@@ -99,8 +159,8 @@ async fn create(
     );
   }
 
-  let latitude = req.0.latitude.unwrap().parse::<f64>().unwrap();
-  let longitude = req.0.longitude.unwrap().parse::<f64>().unwrap();
+  let latitude = req.0.latitude.unwrap();
+  let longitude = req.0.longitude.unwrap();
 
   let station = Station::find_closest_by_latitude_longitude(&db, latitude, longitude).await;
 
@@ -114,12 +174,16 @@ async fn create(
   let plantation_uuid = Plantation::insert(
     &db,
     user.id,
-    req.0.culture_id.unwrap().parse::<i64>().unwrap(),
+    req.0.culture_id.unwrap(),
     Some(station.ok().unwrap().id),
     req.0.alias.unwrap(),
     latitude,
     longitude,
-    req.0.area.unwrap().parse::<f64>().unwrap(),
+    req.0.area.unwrap(),
+    NaiveDate::parse_from_str(&req.0.planting_date.unwrap(), "%Y-%m-%d")
+      .unwrap()
+      .and_hms_opt(0, 0, 0)
+      .unwrap(),
   )
   .await
   .unwrap();
@@ -151,24 +215,42 @@ async fn show(db: Data<&database::DataBase>, user: Data<&User>, id: Path<String>
     stations = Some(Station::find_by_id(&db, plantation.station_id.unwrap()).await);
   }
 
-  let mut ocurrences =
+  let mut ocurrences_db =
     PlantationPathogenicOccurrences::get_by_plantation_id(&db, plantation.id).await;
-  if ocurrences.is_err() {
-    ocurrences = Ok(vec![]);
+  let mut ocurrences: Vec<PlantationPathogenicOccurrencesResponse> = Vec::new();
+  if ocurrences_db.is_ok() {
+    for ocurrence in ocurrences_db.as_mut().unwrap() {
+      let pathogenic = Pathogenic::find_by_id(&db, &ocurrence.pathogenic_id)
+        .await
+        .unwrap();
+
+      ocurrences.push(PlantationPathogenicOccurrencesResponse {
+        id: ocurrence.id.to_string(),
+        pathogenic,
+        image: ocurrence.image.clone(),
+        occurrence_date: ocurrence.occurrence_date,
+        temperature: ocurrence.temperature,
+        humidity: ocurrence.humidity,
+        create_date: ocurrence.create_date,
+        update_date: ocurrence.update_date,
+      });
+    }
   }
 
-  response::json_ok(serde_json::json!({ "plantation": PlantationResponse {
+  response::json_ok(serde_json::json!(PlantationResponse {
     id: plantation.id.to_string(),
     alias: plantation.alias,
     latitude: plantation.latitude,
     longitude: plantation.longitude,
     area: plantation.area,
+    planting_date: plantation.planting_date,
     create_date: plantation.create_date,
     update_date: plantation.update_date,
     culture,
     station: stations,
-    ocurrences: Some(ocurrences.unwrap())
-  }}))
+    plantation_ocurrences: Some(ocurrences),
+    region_ocurrences: None
+  }))
 }
 
 #[handler]
@@ -192,11 +274,7 @@ async fn update(
 
   let plantation = plantation_result.unwrap();
 
-  let culture = Culture::find_by_id(
-    &db,
-    req.0.culture_id.as_ref().unwrap().parse::<i64>().unwrap(),
-  )
-  .await;
+  let culture = Culture::find_by_id(&db, req.0.culture_id.unwrap()).await;
 
   if culture.is_err() {
     return response::json(
@@ -205,8 +283,8 @@ async fn update(
     );
   }
 
-  let latitude = req.0.latitude.unwrap().parse::<f64>().unwrap();
-  let longitude = req.0.longitude.unwrap().parse::<f64>().unwrap();
+  let latitude = req.0.latitude.unwrap();
+  let longitude = req.0.longitude.unwrap();
 
   let station = Station::find_closest_by_latitude_longitude(&db, latitude, longitude).await;
 
@@ -220,12 +298,16 @@ async fn update(
   let _ = Plantation::update(
     &db,
     plantation.id,
-    req.0.culture_id.unwrap().parse::<i64>().unwrap(),
+    req.0.culture_id.unwrap(),
     Some(station.ok().unwrap().id),
     req.0.alias.unwrap(),
     latitude,
     longitude,
-    req.0.area.unwrap().parse::<f64>().unwrap(),
+    req.0.area.unwrap(),
+    NaiveDate::parse_from_str(&req.0.planting_date.unwrap(), "%Y-%m-%d")
+      .unwrap()
+      .and_hms_opt(0, 0, 0)
+      .unwrap(),
   )
   .await;
 
@@ -265,11 +347,11 @@ async fn all_ocurrences(
     );
   }
 
-  let _ = plantation_result.unwrap();
+  let plantation = plantation_result.unwrap();
 
-  return response::json_ok(
-    serde_json::json!({ "errors": vec![JsonError::new("plantation".to_string(), "not found".to_string())] }),
-  );
+  let ocurrences = PlantationPathogenicOccurrences::get_by_plantation_id(&db, plantation.id).await;
+
+  return response::json_ok(serde_json::json!({ "ocurrences": ocurrences.unwrap() }));
 }
 
 #[handler]
@@ -297,7 +379,7 @@ async fn create_ocurrence(
     &db,
     user.id,
     plantation.id,
-    req.0.pathogenic_id.unwrap().parse::<i64>().unwrap(),
+    req.0.pathogenic_id.unwrap(),
     None,
     NaiveDate::parse_from_str(&req.0.occurrence_date.unwrap(), "%Y-%m-%d")
       .unwrap()

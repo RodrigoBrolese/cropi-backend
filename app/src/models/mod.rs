@@ -1,4 +1,5 @@
 pub(crate) mod culture;
+pub(crate) mod pathogenic;
 pub(crate) mod plantation;
 pub(crate) mod plantation_pathogenic_occurrences;
 pub(crate) mod stations;

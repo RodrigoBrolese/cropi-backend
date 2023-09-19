@@ -8,7 +8,6 @@ pub(crate) async fn make() -> Result<Client, NewSessionError> {
     "goog:chromeOptions".into(),
     serde_json::json!({
       "args": vec![
-        "--headless",
         "--disable-gpu",
         "--disable-remote-fonts",
         format!("--user-agent={}", spoof_ua()).as_str()

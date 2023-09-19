@@ -9,6 +9,7 @@ CREATE TABLE plantations
     alias       varchar   NULL,
     location    point     NOT NULL,
     area        float8    NOT NULL,
+    planting_date timestamp NOT NULL,
     create_date timestamp NOT NULL DEFAULT NOW(),
     update_date timestamp DEFAULT NOW()
 );

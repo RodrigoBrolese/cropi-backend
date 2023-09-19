@@ -1,13 +1,9 @@
 use poem::{http::StatusCode, Endpoint, Error, Request, Result};
 
 pub(crate) async fn handle<E: Endpoint>(next: E, req: Request) -> Result<<E as Endpoint>::Output> {
-  let content_type = req
-    .headers()
-    .get("Content-Type")
-    .and_then(|value| value.to_str().ok())
-    .unwrap_or("");
+  let content_type = req.header("content-type").unwrap_or("");
 
-  if content_type != "application/json" {
+  if !content_type.contains("application/json") {
     return Err(Error::from_string(
       "Content-Type must be JSON".to_string(),
       StatusCode::BAD_REQUEST,

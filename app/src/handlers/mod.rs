@@ -8,8 +8,8 @@ use poem::{endpoint::StaticFilesEndpoint, EndpointExt, Route};
 
 pub(crate) fn all() -> Route {
   Route::new()
-    .nest("/health", health::routes().around(ensure_json::handle))
-    .nest("/users", user::routes().around(ensure_json::handle))
+    .nest("/health", health::routes())
+    .nest("/user", user::routes().around(ensure_json::handle))
     .nest("/login", login::routes().around(ensure_json::handle))
     .nest("/plantations", plantations::routes().around(auth::handle))
     .nest(

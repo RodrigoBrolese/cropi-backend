@@ -71,14 +71,22 @@ async fn create(req: Json<UserCreate>, pool: Data<&DataBase>) -> Response {
 }
 
 #[handler]
-async fn get_all(database: Data<&DataBase>) -> Json<Vec<User>> {
-  let result = User::get_all(database.clone()).await;
+async fn get_authenticated_user(user: Data<&User>) -> Response {
+  let mut user = user.0.clone();
 
-  Json(result.unwrap())
+  response::json_ok(serde_json::json!({
+    "user": {
+      "id": user.id,
+      "name": user.name,
+      "email": user.email,
+      "born_date": user.born_date,
+      "created_at": user.create_date,
+    }
+  }))
 }
 
 pub fn routes() -> Route {
   Route::new()
-    .just_at(get(get_all).around(auth::handle))
-    .at("/create", post(create))
+    .just_at(get(get_authenticated_user).around(auth::handle))
+    .at("/register", post(create))
 }

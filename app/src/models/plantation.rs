@@ -11,6 +11,7 @@ pub(crate) struct Plantation {
   pub latitude: Option<f64>,
   pub longitude: Option<f64>,
   pub area: f64,
+  pub planting_date: chrono::NaiveDateTime,
   pub create_date: chrono::NaiveDateTime,
   pub update_date: Option<chrono::NaiveDateTime>,
 }
@@ -26,12 +27,14 @@ impl Plantation {
             plantations.station_id,
             plantations.alias,
             plantations.area,
+            plantations.planting_date,
             plantations.create_date,
             plantations.update_date,
             st_x(plantations.location::geometry) AS latitude,
             st_y(plantations.location::geometry) AS longitude
       FROM plantations
       WHERE user_id = $1
+      ORDER BY plantations.create_date DESC
     ",
       user_id
     )
@@ -50,6 +53,7 @@ impl Plantation {
             plantations.station_id,
             plantations.alias,
             plantations.area,
+            plantations.planting_date,
             plantations.create_date,
             plantations.update_date,
             st_x(plantations.location::geometry) AS latitude,
@@ -72,6 +76,7 @@ impl Plantation {
     latitude: f64,
     longitude: f64,
     area: f64,
+    planting_date: chrono::NaiveDateTime,
   ) -> Result<Uuid> {
     let point = format!(
       "POINT ({} {})",
@@ -80,14 +85,15 @@ impl Plantation {
     );
 
     let result = sqlx::query!(
-      "INSERT INTO plantations (id, user_id, culture_id, station_id, alias, location, area) VALUES ($1, $2, $3, $4, $5, ST_PointFromText($6)::point, $7) RETURNING id",
+      "INSERT INTO plantations (id, user_id, culture_id, station_id, alias, location, area, planting_date) VALUES ($1, $2, $3, $4, $5, ST_PointFromText($6)::point, $7, $8) RETURNING id",
       Uuid::new_v4(),
       user_id,
       culture_id,
       station_id,
       alias,
       point,
-      area
+      area,
+      planting_date
     )
     .fetch_one(&db.pool)
     .await
@@ -105,6 +111,7 @@ impl Plantation {
     latitude: f64,
     longitude: f64,
     area: f64,
+    planting_date: chrono::NaiveDateTime,
   ) -> Result<()> {
     let point = format!(
       "POINT ({} {})",
@@ -113,13 +120,14 @@ impl Plantation {
     );
 
     sqlx::query!(
-      "UPDATE plantations SET culture_id = $1, station_id = $2, alias = $3, location = ST_PointFromText($4)::point, area = $5 WHERE id = $6",
+      "UPDATE plantations SET culture_id = $2, station_id = $3, alias = $4, location = ST_PointFromText($5)::point, area = $6, planting_date = $7 WHERE id = $1",
+      id,
       culture_id,
       station_id,
       alias,
       point,
       area,
-      id
+      planting_date
     )
     .execute(&db.pool)
     .await
@@ -135,5 +143,17 @@ impl Plantation {
       .map_err(DataBase::database_error)?;
 
     Ok(())
+  }
+
+  pub(crate) async fn has_ocurrence_last_24h(db: &DataBase, id: Uuid) -> Result<bool> {
+    let result = sqlx::query!(
+      "SELECT EXISTS(SELECT 1 FROM plantation_pathogenic_occurrences WHERE plantation_id = $1 AND occurrence_date >= now() - interval '24 hours') AS has_ocurrence_last_24h",
+      id
+    )
+    .fetch_one(&db.pool)
+    .await
+    .map_err(DataBase::database_error)?;
+
+    Ok(result.has_ocurrence_last_24h.unwrap())
   }
 }

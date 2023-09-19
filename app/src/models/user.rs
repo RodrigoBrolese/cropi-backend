@@ -26,11 +26,11 @@ impl User {
   //   }
   // }
 
-  pub async fn get_all(database: DataBase) -> Result<Vec<User>, Error> {
-    return sqlx::query_as!(User, "SELECT * FROM users")
-      .fetch_all(&database.pool)
-      .await;
-  }
+  // pub async fn get_all(database: DataBase) -> Result<Vec<User>, Error> {
+  //   return sqlx::query_as!(User, "SELECT * FROM users")
+  //     .fetch_all(&database.pool)
+  //     .await;
+  // }
 
   pub async fn insert(
     database: DataBase,
