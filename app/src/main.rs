@@ -34,7 +34,7 @@ async fn main() -> Result<(), std::io::Error> {
     .with(CatchPanic::new().with_handler(|_| utils::request_error::catch_panic()))
     .data(db);
 
-  Server::new(TcpListener::bind("127.0.0.1:3000"))
+  Server::new(TcpListener::bind("127.0.0.1:3001"))
     .name("cropi")
     .run(app)
     .await

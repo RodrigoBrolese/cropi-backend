@@ -1,5 +1,6 @@
 [workspace]
 members = ["app", "crawler"]
+resolver = "2"
 
 [workspace.package]
 version = "1.0.0"

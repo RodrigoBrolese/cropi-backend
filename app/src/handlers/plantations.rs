@@ -62,6 +62,7 @@ struct PlantationResponse {
   update_date: Option<chrono::NaiveDateTime>,
   culture: Culture,
   station: Option<Station>,
+  has_ocurrences: bool,
   plantation_ocurrences: Option<Vec<PlantationPathogenicOccurrencesResponse>>,
   region_ocurrences: Option<Vec<PlantationPathogenicOccurrencesResponse>>,
 }
@@ -248,6 +249,9 @@ async fn show(db: Data<&database::DataBase>, user: Data<&User>, id: Path<String>
     update_date: plantation.update_date,
     culture,
     station: stations,
+    has_ocurrences: Plantation::has_ocurrence_last_24h(&db, plantation.id)
+      .await
+      .unwrap_or(false),
     plantation_ocurrences: Some(ocurrences),
     region_ocurrences: None
   }))

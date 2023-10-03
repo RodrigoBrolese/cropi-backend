@@ -147,7 +147,16 @@ impl Plantation {
 
   pub(crate) async fn has_ocurrence_last_24h(db: &DataBase, id: Uuid) -> Result<bool> {
     let result = sqlx::query!(
-      "SELECT EXISTS(SELECT 1 FROM plantation_pathogenic_occurrences WHERE plantation_id = $1 AND occurrence_date >= now() - interval '24 hours') AS has_ocurrence_last_24h",
+      "SELECT EXISTS(SELECT *
+        FROM plantation_pathogenic_occurrences ppo
+                 JOIN plantations p ON ppo.plantation_id = p.id
+        WHERE st_distancesphere(p.location::geometry,
+                                (SELECT location
+                                 FROM plantations
+                                 WHERE id = $1)::geometry) < 100000
+          AND ppo.occurrence_date >= NOW() - INTERVAL '24 hours'
+          AND ppo.plantation_id != $2) AS has_ocurrence_last_24h;",
+      id,
       id
     )
     .fetch_one(&db.pool)

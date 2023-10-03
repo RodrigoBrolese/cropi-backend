@@ -1,6 +1,6 @@
 use crate::utils::database::DataBase;
 use chrono::{naive::serde::ts_seconds, NaiveDateTime};
-use sqlx::{types::Uuid, Error, Result};
+use sqlx::{types::Uuid, Result};
 
 #[derive(Debug, serde::Serialize, Clone)]
 pub(crate) struct User {
