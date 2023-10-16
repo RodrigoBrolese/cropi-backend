@@ -165,4 +165,34 @@ impl Plantation {
 
     Ok(result.has_ocurrence_last_24h.unwrap())
   }
+
+  pub async fn all_closest_to_plantation(
+    db: &DataBase,
+    plantation: &Plantation,
+  ) -> Vec<Plantation> {
+    sqlx::query_as!(
+      Plantation,
+      "
+        SELECT plantations.id,
+              plantations.user_id,
+              plantations.culture_id,
+              plantations.station_id,
+              plantations.alias,
+              plantations.area,
+              plantations.planting_date,
+              plantations.create_date,
+              plantations.update_date,
+              st_x(plantations.location::geometry) AS latitude,
+              st_y(plantations.location::geometry) AS longitude
+        FROM plantations
+        WHERE st_distancesphere(location::geometry,
+                                POINT($1, $2)::geometry) < 100000
+    ",
+      plantation.latitude.unwrap(),
+      plantation.longitude.unwrap(),
+    )
+    .fetch_all(&db.pool)
+    .await
+    .unwrap()
+  }
 }

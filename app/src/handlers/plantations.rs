@@ -216,7 +216,7 @@ async fn show(db: Data<&database::DataBase>, user: Data<&User>, id: Path<String>
     stations = Some(Station::find_by_id(&db, plantation.station_id.unwrap()).await);
   }
 
-  let mut ocurrences_db =
+  let mut ocurrences_db: Result<Vec<PlantationPathogenicOccurrences>, sqlx::Error> =
     PlantationPathogenicOccurrences::get_by_plantation_id(&db, plantation.id).await;
   let mut ocurrences: Vec<PlantationPathogenicOccurrencesResponse> = Vec::new();
   if ocurrences_db.is_ok() {
@@ -229,6 +229,29 @@ async fn show(db: Data<&database::DataBase>, user: Data<&User>, id: Path<String>
         id: ocurrence.id.to_string(),
         pathogenic,
         image: ocurrence.image.clone(),
+        occurrence_date: ocurrence.occurrence_date,
+        temperature: ocurrence.temperature,
+        humidity: ocurrence.humidity,
+        create_date: ocurrence.create_date,
+        update_date: ocurrence.update_date,
+      });
+    }
+  }
+
+  let mut region_ocurrences_db: Result<Vec<PlantationPathogenicOccurrences>, sqlx::Error> =
+    PlantationPathogenicOccurrences::get_closest_by_plantation_id(&db, plantation.id).await;
+  let mut region_ocurrences: Vec<PlantationPathogenicOccurrencesResponse> = Vec::new();
+
+  if region_ocurrences_db.is_ok() {
+    for ocurrence in region_ocurrences_db.as_mut().unwrap() {
+      let pathogenic = Pathogenic::find_by_id(&db, &ocurrence.pathogenic_id)
+        .await
+        .unwrap();
+
+      region_ocurrences.push(PlantationPathogenicOccurrencesResponse {
+        id: ocurrence.id.to_string(),
+        pathogenic,
+        image: None,
         occurrence_date: ocurrence.occurrence_date,
         temperature: ocurrence.temperature,
         humidity: ocurrence.humidity,
@@ -253,7 +276,7 @@ async fn show(db: Data<&database::DataBase>, user: Data<&User>, id: Path<String>
       .await
       .unwrap_or(false),
     plantation_ocurrences: Some(ocurrences),
-    region_ocurrences: None
+    region_ocurrences: Some(region_ocurrences)
   }))
 }
 
@@ -387,7 +410,7 @@ async fn create_ocurrence(
     None,
     NaiveDate::parse_from_str(&req.0.occurrence_date.unwrap(), "%Y-%m-%d")
       .unwrap()
-      .and_hms_opt(0, 0, 0)
+      .and_hms_opt(23, 59, 59)
       .unwrap(),
     None,
     None,
@@ -400,6 +423,7 @@ async fn create_ocurrence(
   let db_arc = Arc::new(db.clone());
 
   tokio::spawn(async move {
+    println!("Sending notification for ocurrence: {:?}", ocurrence_arc);
     let job = SendOcurrenceNotification {
       ocurrence: ocurrence_arc.as_ref().clone(),
       db: db_arc.as_ref(),
@@ -439,6 +463,8 @@ async fn ocurrence_add_image(
     );
   }
 
+  let mut file_path = String::new();
+
   while let Ok(Some(field)) = multipart.next_field().await {
     let mime = field.content_type().unwrap();
 
@@ -449,7 +475,7 @@ async fn ocurrence_add_image(
       );
     }
 
-    let file_path = format!(
+    file_path = format!(
       "/images/ocurrences/{}.{}",
       ocurrence_result.as_ref().unwrap().id.to_string(),
       "png".to_string()
@@ -462,7 +488,7 @@ async fn ocurrence_add_image(
       let _ = PlantationPathogenicOccurrences::add_image_by_id(
         &db,
         ocurrence_result.as_ref().unwrap().id,
-        file_path,
+        file_path.as_mut().to_string(),
       )
       .await
       .unwrap();
@@ -470,7 +496,7 @@ async fn ocurrence_add_image(
   }
 
   response::json_ok(serde_json::json!({
-    "message": "ok"
+    "image": file_path
   }))
 }
 

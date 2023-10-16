@@ -12,6 +12,17 @@ pub(crate) struct User {
   pub born_date: NaiveDateTime,
   #[serde(with = "ts_seconds")]
   pub create_date: NaiveDateTime,
+  pub notification_token: Option<String>,
+}
+
+#[derive(Debug, serde::Serialize, Clone)]
+pub(crate) struct UserNotifications {
+  pub id: i64,
+  pub user_id: Uuid,
+  pub message: String,
+  pub viewed: bool,
+  #[serde(with = "ts_seconds")]
+  pub create_date: NaiveDateTime,
 }
 
 impl User {
@@ -63,12 +74,55 @@ impl User {
     )
   }
 
-  pub(crate) async fn find_by_uuid(database: DataBase, uid: Uuid) -> Result<User> {
+  pub(crate) async fn find_by_uuid(database: &DataBase, uid: Uuid) -> Result<User> {
     Ok(
       sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1 LIMIT 1", uid)
         .fetch_one(&database.pool)
         .await
         .map_err(DataBase::database_error)?,
     )
+  }
+
+  pub(crate) async fn update_notification_token(
+    database: DataBase,
+    uid: Uuid,
+    token: &String,
+  ) -> Result<()> {
+    sqlx::query!(
+      "UPDATE users SET notification_token = $1 WHERE id = $2",
+      token,
+      uid
+    )
+    .execute(&database.pool)
+    .await
+    .map_err(DataBase::database_error)?;
+
+    Ok(())
+  }
+
+  pub(crate) async fn get_notifications(
+    database: DataBase,
+    uid: Uuid,
+  ) -> Result<Vec<UserNotifications>> {
+    Ok(sqlx::query_as!(
+      UserNotifications,
+      "SELECT id, user_id, message, viewed, create_date FROM user_notifications WHERE user_id = $1 ORDER BY create_date DESC LIMIT 20",
+      uid
+    )
+    .fetch_all(&database.pool)
+    .await
+    .map_err(DataBase::database_error)?)
+  }
+
+  pub(crate) async fn update_viewed_notifications(database: DataBase, uid: Uuid) -> Result<()> {
+    sqlx::query!(
+      "UPDATE user_notifications SET viewed = true WHERE user_id = $1",
+      uid
+    )
+    .execute(&database.pool)
+    .await
+    .map_err(DataBase::database_error)?;
+
+    Ok(())
   }
 }

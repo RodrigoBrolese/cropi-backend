@@ -1,0 +1,89 @@
+-- Temperatura
+
+dia: 2023-11-02 - temperatura: 17 - qtd:9
+dia: 2023-11-02 - temperatura: 18 - qtd:5
+dia: 2023-11-02 - temperatura: 19 - qtd:4
+dia: 2023-11-02 - temperatura: 20 - qtd:3
+dia: 2023-11-02 - temperatura: 21 - qtd:3
+
+dia: 2023-11-03 - temperatura: 17 - qtd:2
+dia: 2023-11-03 - temperatura: 18 - qtd:5
+dia: 2023-11-03 - temperatura: 19 - qtd:2
+dia: 2023-11-03 - temperatura: 20 - qtd:9
+dia: 2023-11-03 - temperatura: 21 - qtd:3
+dia: 2023-11-03 - temperatura: 22 - qtd:3
+
+dia: 2023-11-04 - temperatura: 19 - qtd:2
+dia: 2023-11-04 - temperatura: 21 - qtd:1
+dia: 2023-11-04 - temperatura: 22 - qtd:2
+dia: 2023-11-04 - temperatura: 23 - qtd:2
+dia: 2023-11-04 - temperatura: 24 - qtd:3
+dia: 2023-11-04 - temperatura: 25 - qtd:2
+
+dia: 2023-11-05 - temperatura: 17 - qtd:3
+dia: 2023-11-05 - temperatura: 19 - qtd:1
+dia: 2023-11-05 - temperatura: 21 - qtd:4
+dia: 2023-11-05 - temperatura: 22 - qtd:2
+dia: 2023-11-05 - temperatura: 23 - qtd:2
+dia: 2023-11-05 - temperatura: 24 - qtd:1
+
+dia: 2023-11-06 - temperatura: 17 - qtd:2
+dia: 2023-11-06 - temperatura: 18 - qtd:1
+dia: 2023-11-06 - temperatura: 19 - qtd:1
+dia: 2023-11-06 - temperatura: 20 - qtd:1
+dia: 2023-11-06 - temperatura: 21 - qtd:2
+dia: 2023-11-06 - temperatura: 22 - qtd:1
+dia: 2023-11-06 - temperatura: 23 - qtd:2
+dia: 2023-11-06 - temperatura: 24 - qtd:4
+
+dia: 2023-11-07 - temperatura: 17 - qtd:4
+dia: 2023-11-07 - temperatura: 18 - qtd:3
+dia: 2023-11-07 - temperatura: 19 - qtd:1
+dia: 2023-11-07 - temperatura: 20 - qtd:1
+dia: 2023-11-07 - temperatura: 22 - qtd:2
+dia: 2023-11-07 - temperatura: 23 - qtd:1
+dia: 2023-11-07 - temperatura: 25 - qtd:1
+
+dia: 2023-11-08 - temperatura: 17 - qtd:2
+dia: 2023-11-08 - temperatura: 18 - qtd:4
+dia: 2023-11-08 - temperatura: 19 - qtd:2
+dia: 2023-11-08 - temperatura: 22 - qtd:1
+dia: 2023-11-08 - temperatura: 23 - qtd:1
+dia: 2023-11-08 - temperatura: 24 - qtd:1
+dia: 2023-11-08 - temperatura: 25 - qtd:1
+
+dia: 2023-11-09 - temperatura: 19 - qtd:2
+dia: 2023-11-09 - temperatura: 20 - qtd:4
+dia: 2023-11-09 - temperatura: 21 - qtd:4
+dia: 2023-11-09 - temperatura: 22 - qtd:4
+dia: 2023-11-09 - temperatura: 23 - qtd:5
+dia: 2023-11-09 - temperatura: 24 - qtd:2
+
+-- Umidade
+
+dia: 2023-11-02 - umidade: 90 - qtd:4
+dia: 2023-11-02 - umidade: 91 - qtd:5
+dia: 2023-11-02 - umidade: 92 - qtd:1
+dia: 2023-11-02 - umidade: 93 - qtd:3
+
+dia: 2023-11-03 - umidade: 90 - qtd:1
+dia: 2023-11-03 - umidade: 91 - qtd:1
+
+dia: 2023-11-04 - umidade: 92 - qtd:1
+dia: 2023-11-04 - umidade: 93 - qtd:1
+dia: 2023-11-04 - umidade: 94 - qtd:1
+
+dia: 2023-11-05 - umidade: 91 - qtd:1
+
+dia: 2023-11-06 - umidade: 92 - qtd:1
+dia: 2023-11-06 - umidade: 93 - qtd:3
+dia: 2023-11-06 - umidade: 94 - qtd:2
+
+dia: 2023-11-07 - umidade: 93 - qtd:1
+
+dia: 2023-11-08 - umidade: 90 - qtd:1
+dia: 2023-11-08 - umidade: 92 - qtd:1
+dia: 2023-11-08 - umidade: 93 - qtd:1
+
+dia: 2023-11-09 - umidade: 90 - qtd:3
+dia: 2023-11-09 - umidade: 92 - qtd:1

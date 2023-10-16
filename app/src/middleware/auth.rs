@@ -33,7 +33,7 @@ pub(crate) async fn handle<E: Endpoint>(
   }
 
   let user = User::find_by_uuid(
-    req.data::<DataBase>().unwrap().clone(),
+    &req.data::<DataBase>().unwrap().clone(),
     Uuid::from_str(claims.unwrap().claims.sub.as_str()).unwrap(),
   )
   .await;

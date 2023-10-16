@@ -37,7 +37,41 @@ impl PlantationPathogenicOccurrences {
                 update_date
             FROM plantation_pathogenic_occurrences
             WHERE plantation_id = $1
+            ORDER BY create_date DESC
             ",
+      plantation_id
+    )
+    .fetch_all(&db.pool)
+    .await
+  }
+
+  pub(crate) async fn get_closest_by_plantation_id(
+    db: &DataBase,
+    plantation_id: Uuid,
+  ) -> Result<Vec<PlantationPathogenicOccurrences>> {
+    sqlx::query_as!(
+      PlantationPathogenicOccurrences,
+      "
+            SELECT ppo.id,
+                   ppo.user_id,
+                   ppo.plantation_id,
+                   ppo.pathogenic_id,
+                   ppo.image,
+                   ppo.occurrence_date,
+                   ppo.temperature,
+                   ppo.humidity,
+                   ppo.create_date,
+                   ppo.update_date
+            FROM plantation_pathogenic_occurrences ppo
+                    JOIN plantations p ON p.id = ppo.plantation_id
+            WHERE st_distancesphere(p.location::geometry,
+                                  (SELECT location
+                                    FROM plantations
+                                    WHERE id = $1)::geometry) < 100000
+            AND ppo.plantation_id != $2
+            ORDER BY create_date DESC
+            ",
+      plantation_id,
       plantation_id
     )
     .fetch_all(&db.pool)

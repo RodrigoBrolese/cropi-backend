@@ -8,7 +8,7 @@ use dotenv::dotenv;
 use poem::{
   error::NotFoundError,
   listener::TcpListener,
-  middleware::{CatchPanic, Tracing},
+  middleware::{CatchPanic, Cors, Tracing},
   EndpointExt,
   Route,
   Server,
@@ -29,12 +29,13 @@ async fn main() -> Result<(), std::io::Error> {
   let app = Route::new()
     .nest("/", handlers::all())
     .with(Tracing)
+    .with(Cors::new())
     .catch_error(|_: NotFoundError| async move { utils::request_error::catch_not_found_error() })
     .catch_all_error(utils::request_error::catch_all_errors)
     .with(CatchPanic::new().with_handler(|_| utils::request_error::catch_panic()))
     .data(db);
 
-  Server::new(TcpListener::bind("127.0.0.1:3001"))
+  Server::new(TcpListener::bind(std::env::var("APP_URL").unwrap()))
     .name("cropi")
     .run(app)
     .await
