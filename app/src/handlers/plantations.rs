@@ -112,6 +112,10 @@ async fn all(db: Data<&database::DataBase>, user: Data<&User>) -> Response {
 
   let mut response: Vec<PlantationAllResponse> = Vec::new();
   for plantation in plantations {
+    if plantation.delete_at.is_some() {
+      continue;
+    }
+
     let culture = Culture::find_by_id(&db, plantation.culture_id)
       .await
       .unwrap();

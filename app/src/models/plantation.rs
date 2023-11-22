@@ -14,6 +14,7 @@ pub(crate) struct Plantation {
   pub planting_date: chrono::NaiveDateTime,
   pub create_date: chrono::NaiveDateTime,
   pub update_date: Option<chrono::NaiveDateTime>,
+  pub delete_at: Option<chrono::NaiveDateTime>,
 }
 
 impl Plantation {
@@ -30,6 +31,7 @@ impl Plantation {
             plantations.planting_date,
             plantations.create_date,
             plantations.update_date,
+            plantations.delete_at,
             st_x(plantations.location::geometry) AS latitude,
             st_y(plantations.location::geometry) AS longitude
       FROM plantations
@@ -56,6 +58,7 @@ impl Plantation {
             plantations.planting_date,
             plantations.create_date,
             plantations.update_date,
+            plantations.delete_at,
             st_x(plantations.location::geometry) AS latitude,
             st_y(plantations.location::geometry) AS longitude
       FROM plantations
@@ -182,6 +185,7 @@ impl Plantation {
               plantations.planting_date,
               plantations.create_date,
               plantations.update_date,
+              plantations.delete_at,
               st_x(plantations.location::geometry) AS latitude,
               st_y(plantations.location::geometry) AS longitude
         FROM plantations
